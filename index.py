@@ -1,8 +1,8 @@
-from flask import Flask, request, jsonify, make_response
+from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
-# 暫時先用假資料測試
+# 假資料測試
 fake_movies = {
     "限制級": [
         {"title": "奪魂鋸", "hyperlink": "https://example.com/saw"},
@@ -26,34 +26,35 @@ fake_movies = {
 def webhook():
     try:
         req = request.get_json(force=True)
-        
-        # 取得 action 和參數
         action = req.get("queryResult", {}).get("action")
         
         if action == "rateChoice":
             rate = req.get("queryResult", {}).get("parameters", {}).get("rate")
             
             if not rate:
-                return make_response(jsonify({"fulfillmentText": "請告訴我要查詢哪種分級的電影，例如：限制級"}))
+                return jsonify({"fulfillmentText": "請告訴我要查詢哪種分級的電影"})
             
-            # 用假資料查詢
             movies = fake_movies.get(rate, [])
             
             if movies:
                 result = f"您查詢的 {rate} 電影有：\n"
                 for m in movies:
-                    result += f"• {m['title']}\n"
-                    result += f"  介紹：{m['hyperlink']}\n\n"
+                    result += f"• {m['title']}\n  介紹：{m['hyperlink']}\n\n"
             else:
                 result = f"抱歉，目前沒有 {rate} 的電影資料"
             
-            return make_response(jsonify({"fulfillmentText": result}))
+            return jsonify({"fulfillmentText": result})
         
-        return make_response(jsonify({"fulfillmentText": "我不明白您的意思"}))
+        return jsonify({"fulfillmentText": "我不明白您的意思"})
     
     except Exception as e:
-        return make_response(jsonify({"fulfillmentText": f"發生錯誤：{str(e)}"}))
+        return jsonify({"fulfillmentText": f"發生錯誤：{str(e)}"})
 
-# Vercel 需要這個 handler
-def handler(request):
-    return app(request)
+# 根目錄測試用
+@app.route("/", methods=["GET"])
+def home():
+    return "MovieBot is running!"
+
+# Vercel 需要的 handler
+def handler(request, context):
+    return app(request, context)
